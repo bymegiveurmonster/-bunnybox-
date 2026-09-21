@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BunnyBox - ศูนย์รวมกล่องข้อความนักเขียน ♡</title>
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; font-family: "Mali", sans-serif; color: #62566f;
+      background: linear-gradient(135deg, #fff4f8, #f4efff 50%, #eef8ff);
+    }
+    .top-nav {
+      position: fixed; top: 0; left: 0; right: 0; height: 60px; padding: 0 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(234, 217, 244, 0.8); z-index: 1000;
+    }
+    .nav-brand { font-family: "Quicksand", sans-serif; font-weight: 700; font-size: 18px; color: #ed91b7; text-decoration: none; }
+    .btn-small { padding: 6px 14px; border-radius: 20px; border: none; font-family: "Mali", sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-logout { background: #ffe3eb; color: #d66188; }
+    
+    .container { width: min(650px, 92%); margin: 80px auto 40px; }
+    
+    .card {
+      background: rgba(255, 255, 255, 0.9); border: 2px solid rgba(221, 190, 239, 0.7);
+      border-radius: 28px; padding: 25px; box-shadow: 0 10px 30px rgba(170, 137, 196, 0.1);
+      margin-bottom: 20px; text-align: center;
+    }
+
+    input, textarea, select {
+      width: 100%; padding: 12px 15px; margin-top: 8px; margin-bottom: 12px;
+      border: 1.5px solid #eadcf2; border-radius: 14px; outline: none; font-family: inherit;
+    }
+
+    .btn-main {
+      width: 100%; padding: 13px; border: 0; border-radius: 14px;
+      background: linear-gradient(135deg, #f5b6d0, #d7b8ed); color: white;
+      font-family: inherit; font-weight: 700; cursor: pointer;
+    }
+
+    .writer-link-box {
+      background: #fcf2f8; padding: 12px; border-radius: 12px; border: 1px dashed #e8a7c5;
+      margin: 10px 0; word-break: break-all; font-size: 13px; color: #c95185;
+    }
+
+    .msg-card { background: white; padding: 16px; border-radius: 18px; border: 1.5px solid #f0e1f7; margin-bottom: 12px; text-align: left; }
+    .msg-header { display: flex; justify-content: space-between; font-size: 12px; color: #9f8bb2; }
+    .msg-reply { margin-top: 8px; padding: 8px 12px; background: #fff0f6; border-left: 3px solid #f07db0; font-size: 13px; border-radius: 6px; }
+  </style>
+</head>
+
+<body>
+
+  <header class="top-nav">
+    <a href="index.html" class="nav-brand">BunnyBox 🐰</a>
+    <div>
+      <span id="user-display" style="font-size:13px; margin-right:10px;"></span>
+      <button class="btn-small btn-logout" id="logout-btn" style="display:none;">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Section 1: หน้าเข้าสู่ระบบ / สมัครสมาชิก -->
+    <div class="card" id="auth-section">
+      <h2>🐰 ยินดีต้อนรับสู่ BunnyBox</h2>
+      <p style="font-size:13px; color:#8a7996; margin-bottom:15px;">สร้างกล่องข้อความส่วนตัว หรือส่งข้อความหานักเขียนที่คุณชื่นชอบ</p>
+      
+      <form id="login-form">
+        <input type="email" id="email" placeholder="อีเมลของคุณ" required>
+        <input type="password" id="password" placeholder="รหัสผ่าน" required>
+        <button type="submit" class="btn-main">เข้าสู่ระบบ / สมัครสมาชิก</button>
+      </form>
+    </div>
+
+    <!-- Section 2: แผงควบคุมของนักเขียน (แดชบอร์ดสร้างลิงก์ส่วนตัว) -->
+    <div class="card" id="writer-dashboard" style="display:none;">
+      <h2 id="writer-welcome">👑 แผงควบคุมนักเขียน</h2>
+      <p style="font-size:13px; color:#887399;">นี่คือลิงก์กล่องข้อความส่วนตัวของคุณ นำไปแปะที่ Bio เพื่อให้แฟนคลับส่งหาได้เลย!</p>
+      
+      <div class="writer-link-box" id="my-profile-link">กำลังสร้างลิงก์...</div>
+
+      <h3 style="margin-top:25px; margin-bottom:10px; color:#b85c88;">📬 ข้อความที่แฟนคลับส่งถึงคุณ</h3>
+      <div id="received-messages-list"></div>
+    </div>
+
+    <!-- Section 3: หน้าส่งข้อความหาผู้รับ (เปิดผ่านลิงก์นักเขียน) -->
+    <div class="card" id="send-msg-section" style="display:none;">
+      <h2 id="target-writer-name">💌 ส่งข้อความหา...</h2>
+      <form id="fan-send-form">
+        <input type="text" id="fan-name" placeholder="ชื่อของคุณ (หรือใส่ 'นิรนาม')" required>
+        <textarea id="fan-message" rows="4" placeholder="พิมพ์ข้อความส่งหาคุณนักเขียนที่นี่..." required></textarea>
+        <button type="submit" class="btn-main">💖 ส่งข้อความออนไลน์</button>
+      </form>
+
+      <h3 style="margin-top:25px; margin-bottom:10px; color:#b85c88;">💬 ข้อความในกล่องนี้</h3>
+      <div id="public-messages-list"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://bbhrmdgptxsfdiutpyra.supabase.co";
+    const SUPABASE_KEY = "7TxcXqdOve4KJHY48F-0ksaXGtoiILde";
+    const bunnySupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentUser = null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetWriterId = urlParams.get('w'); // รับค่า ID นักเขียนจาก URL เช่น ?w=123
+
+    // โหลดหน้าเว็บ
+    window.onload = async () => {
+      const { data: { user } } = await bunnySupabase.auth.getUser();
+      currentUser = user;
+
+      if (currentUser) {
+        document.getElementById("user-display").textContent = "👤 " + currentUser.email;
+        document.getElementById("logout-btn").style.display = "inline-block";
+        document.getElementById("auth-section").style.display = "none";
+        
+        if (!targetWriterId) {
+          showWriterDashboard();
+        }
+      }
+
+      if (targetWriterId) {
+        showSendMsgSection();
+      }
+    };
+
+    // ล็อกอิน / สมัครสมาชิก
+    document.getElementById("login-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      let { data, error } = await bunnySupabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        // ถ้าล็อกอินไม่ผ่าน ให้ทำการสมัครให้อัตโนมัติ
+        const signupRes = await bunnySupabase.auth.signUp({ email, password });
+        if (signupRes.error) alert("เกิดข้อผิดพลาด: " + signupRes.error.message);
+        else location.reload();
+      } else {
+        location.reload();
+      }
+    };
+
+    // ออกจากระบบ
+    document.getElementById("logout-btn").onclick = async () => {
+      await bunnySupabase.auth.signOut();
+      location.href = window.location.pathname;
+    };
+
+    // แสดงหน้าแดชบอร์ดนักเขียน
+    function showWriterDashboard() {
+      document.getElementById("writer-dashboard").style.display = "block";
+      const profileLink = window.location.origin + window.location.pathname + "?w=" + currentUser.id;
+      document.getElementById("my-profile-link").textContent = profileLink;
+      loadWriterMessages();
+    }
+
+    // ดึงข้อความของนักเขียนคนนั้นๆ
+    async function loadWriterMessages() {
+      const { data, error } = await bunnySupabase
+        .from('messages')
+        .select('*')
+        .eq('writer_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      const container = document.getElementById("received-messages-list");
+      if (!data || data.length === 0) {
+        container.innerHTML = "<p style='font-size:12px; color:#aaa;'>ยังไม่มีข้อความส่งเข้ามา</p>";
+        return;
+      }
+
+      container.innerHTML = data.map(m => `
+        <div class="msg-card">
+          <div class="msg-header"><strong>จาก: ${m.sender}</strong></div>
+          <p style="margin:6px 0; font-size:14px;">${m.content}</p>
+          ${m.reply ? `<div class="msg-reply"><strong>คุณตอบว่า:</strong> ${m.reply}</div>` : `
+            <div style="margin-top:8px;">
+              <input type="text" id="reply-${m.id}" placeholder="พิมพ์คำตอบ..." style="width:70%; display:inline-block; margin:0;">
+              <button onclick="replyMsg('${m.id}')" class="btn-main" style="width:28%; float:right; padding:8px;">ตอบ</button>
+            </div>
+          `}
+        </div>
+      `).join("");
+    }
+
+    // ตอบกลับข้อความ
+    window.replyMsg = async (msgId) => {
+      const text = document.getElementById(`reply-${msgId}`).value;
+      if (!text) return;
+      await bunnySupabase.from('messages').update({ reply: text }).eq('id', msgId);
+      alert("ตอบกลับเรียบร้อย!");
+      loadWriterMessages();
+    };
+
+    // แสดงหน้าส่งข้อความหาผู้รับ
+    function showSendMsgSection() {
+      document.getElementById("auth-section").style.display = "none";
+      document.getElementById("send-msg-section").style.display = "block";
+      loadPublicMessages();
+    }
+
+    // ส่งข้อความให้นักเขียนที่ระบุใน URL
+    document.getElementById("fan-send-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const sender = document.getElementById("fan-name").value;
+      const content = document.getElementById("fan-message").value;
+
+      const { error } = await bunnySupabase.from('messages').insert([{
+        writer_id: targetWriterId,
+        sender: sender,
+        content: content
+      }]);
+
+      if (error) {
+        alert("เกิดข้อผิดพลาดในการส่งข้อความ");
+      } else {
+        alert("ส่งข้อความเรียบร้อยแล้วค่ะ! 💌");
+        document.getElementById("fan-message").value = "";
+        loadPublicMessages();
+      }
+    };
+
+    // โหลดข้อความที่ตอบแล้วมาโชว์หน้าเว็บ
+    async function loadPublicMessages() {
+      const { data } = await bunnySupabase
+        .from('messages')
+        .select('*')
+        .eq('writer_id', targetWriterId)
+        .order('created_at', { ascending: false });
+
+      const container = document.getElementById("public-messages-list");
+      if (!data || data.length === 0) {
+        container.innerHTML = "<p style='font-size:12px; color:#aaa;'>ยังไม่มีข้อความ</p>";
+        return;
+      }
+
+      container.innerHTML = data.map(m => `
+        <div class="msg-card">
+          <div class="msg-header"><strong>จาก: ${m.sender}</strong></div>
+          <p style="margin:6px 0; font-size:14px;">${m.content}</p>
+          ${m.reply ? `<div class="msg-reply"><strong>👑 นักเขียนตอบ:</strong> ${m.reply}</div>` : ''}
+        </div>
+      `).join("");
+    }
+  </script>
+
+</body>
+</html>
