@@ -80,7 +80,7 @@
 
     <!-- Section 2: แผงควบคุมของนักเขียน (แดชบอร์ดสร้างลิงก์ส่วนตัว) -->
     <div class="card" id="writer-dashboard" style="display:none;">
-      <h2 id="writer-welcome">👑 แผงควบคุมนักเขียน</h2>
+      <h2 id="writer-welcome">👑 แผงควบคุมครีเอตเตอร์</h2>
       <p style="font-size:13px; color:#887399;">นี่คือลิงก์กล่องข้อความส่วนตัวของคุณ นำไปแปะที่ Bio เพื่อให้แฟนคลับส่งหาได้เลย!</p>
       
       <div class="writer-link-box" id="my-profile-link">กำลังสร้างลิงก์...</div>
@@ -106,8 +106,8 @@
 
   <script>
     const SUPABASE_URL = "https://bbhrmdgptxsfdiutpyra.supabase.co";
-    const SUPABASE_KEY = "7TxcXqdOve4KJHY48F-0ksaXGtoiILde";
-    const bunnySupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_ANON_KEY = "7TxcXqdOve4KJHY48F-0ksaXGtoiILde";
+    const bunnySupabase = supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
     let currentUser = null;
     const urlParams = new URLSearchParams(window.location.search);
